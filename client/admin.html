@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Dashboard - AV/IT Demo</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    h1 { background: #333; color: #fff; margin: 0; padding: 1rem; }
+    .container { padding: 1rem; }
+    .section { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1.5rem; padding: 1rem; }
+    .section h2 { margin-top: 0; }
+    .form-group { margin-bottom: 0.75rem; }
+    .form-group label { display: block; margin-bottom: 0.25rem; }
+    .form-group input, .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    .form-group textarea { min-height: 80px; }
+    .button { margin-top: 0.5rem; padding: 0.5rem 1rem; background: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .list-item { border-bottom: 1px solid #eee; padding: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; }
+    .list-item:last-child { border-bottom: none; }
+    .delete-button { padding: 0.25rem 0.5rem; background: #E53935; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .submissions { max-height: 300px; overflow-y: auto; }
+    small { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <div id="root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/react@17/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.development.js"></script>
+  <script>
+    const { useState, useEffect } = React;
+
+    function ListItem(props) {
+      return React.createElement('div', { className: 'list-item' }, [
+        React.createElement('span', { key: 'text' }, props.text),
+        React.createElement('button', { key: 'btn', className: 'delete-button', onClick: props.onDelete }, 'Delete')
+      ]);
+    }
+
+    function BannersSection() {
+      const [banners, setBanners] = useState([]);
+      const [form, setForm] = useState({ title: '', subtitle: '', imageUrl: '', ctaLabel: '', ctaLink: '' });
+      useEffect(() => { fetch('/api/banners').then(res => res.json()).then(setBanners); }, []);
+      const handleChange = (e) => { setForm(Object.assign({}, form, { [e.target.name]: e.target.value })); };
+      const handleAdd = () => {
+        fetch('/api/banners', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+          .then(res => res.json()).then(data => { setBanners(banners.concat([data])); setForm({ title:'', subtitle:'', imageUrl:'', ctaLabel:'', ctaLink:'' }); });
+      };
+      const handleDelete = (id) => {
+        fetch('/api/banners/' + id, { method: 'DELETE' }).then(() => { setBanners(banners.filter(b => b.id !== id)); });
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Banners'),
+        // Form fields
+        React.createElement('div', { key: 'form' }, [
+          ['title','subtitle','imageUrl','ctaLabel','ctaLink'].map(field =>
+            React.createElement('div', { key: field, className: 'form-group' }, [
+              React.createElement('label', { key: 'label', htmlFor: field }, field.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())),
+              React.createElement('input', { key: 'input', id: field, name: field, value: form[field], onChange: handleChange })
+            ])
+          ),
+          React.createElement('button', { key: 'addBtn', className: 'button', onClick: handleAdd }, 'Add Banner')
+        ]),
+        React.createElement('div', { key: 'list' }, banners.map(b =>
+          React.createElement(ListItem, { key: b.id, text: b.title, onDelete: () => handleDelete(b.id) })
+        ))
+      ]);
+    }
+
+    function ProductsSection() {
+      const [products, setProducts] = useState([]);
+      const [form, setForm] = useState({ name: '', description: '', imageUrl: '', category: '' });
+      useEffect(() => { fetch('/api/products').then(res => res.json()).then(setProducts); }, []);
+      const handleChange = (e) => { setForm(Object.assign({}, form, { [e.target.name]: e.target.value })); };
+      const handleAdd = () => {
+        fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+          .then(res => res.json()).then(data => { setProducts(products.concat([data])); setForm({ name:'', description:'', imageUrl:'', category:'' }); });
+      };
+      const handleDelete = (id) => {
+        fetch('/api/products/' + id, { method: 'DELETE' }).then(() => { setProducts(products.filter(p => p.id !== id)); });
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Products'),
+        React.createElement('div', { key: 'form' }, [
+          ['name','description','imageUrl','category'].map(field =>
+            React.createElement('div', { key: field, className: 'form-group' }, [
+              React.createElement('label', { key: 'label', htmlFor: field }, field.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())),
+              field === 'description'
+                ? React.createElement('textarea', { key: 'textarea', id: field, name: field, value: form[field], onChange: handleChange })
+                : React.createElement('input', { key: 'input', id: field, name: field, value: form[field], onChange: handleChange })
+            ])
+          ),
+          React.createElement('button', { key: 'addBtn', className: 'button', onClick: handleAdd }, 'Add Product')
+        ]),
+        React.createElement('div', { key: 'list' }, products.map(p =>
+          React.createElement(ListItem, { key: p.id, text: p.name, onDelete: () => handleDelete(p.id) })
+        ))
+      ]);
+    }
+
+    function EventsSection() {
+      const [events, setEvents] = useState([]);
+      const [form, setForm] = useState({ title: '', description: '', date: '' });
+      useEffect(() => { fetch('/api/events').then(res => res.json()).then(setEvents); }, []);
+      const handleChange = (e) => { setForm(Object.assign({}, form, { [e.target.name]: e.target.value })); };
+      const handleAdd = () => {
+        fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+          .then(res => res.json()).then(data => { setEvents(events.concat([data])); setForm({ title:'', description:'', date:'' }); });
+      };
+      const handleDelete = (id) => {
+        fetch('/api/events/' + id, { method: 'DELETE' }).then(() => { setEvents(events.filter(e => e.id !== id)); });
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Events'),
+        React.createElement('div', { key: 'form' }, [
+          ['title','description','date'].map(field =>
+            React.createElement('div', { key: field, className: 'form-group' }, [
+              React.createElement('label', { key: 'label', htmlFor: field }, field.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())),
+              field === 'description'
+                ? React.createElement('textarea', { key: 'textarea', id: field, name: field, value: form[field], onChange: handleChange })
+                : React.createElement('input', { key: 'input', type: field === 'date' ? 'date' : 'text', id: field, name: field, value: form[field], onChange: handleChange })
+            ])
+          ),
+          React.createElement('button', { key: 'addBtn', className: 'button', onClick: handleAdd }, 'Add Event')
+        ]),
+        React.createElement('div', { key: 'list' }, events.map(e =>
+          React.createElement(ListItem, { key: e.id, text: e.title + ' (' + e.date + ')', onDelete: () => handleDelete(e.id) })
+        ))
+      ]);
+    }
+
+    function TestimonialsSection() {
+      const [testimonials, setTestimonials] = useState([]);
+      const [form, setForm] = useState({ name: '', company: '', message: '' });
+      useEffect(() => { fetch('/api/testimonials').then(res => res.json()).then(setTestimonials); }, []);
+      const handleChange = (e) => { setForm(Object.assign({}, form, { [e.target.name]: e.target.value })); };
+      const handleAdd = () => {
+        fetch('/api/testimonials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+          .then(res => res.json()).then(data => { setTestimonials(testimonials.concat([data])); setForm({ name:'', company:'', message:'' }); });
+      };
+      const handleDelete = (id) => {
+        fetch('/api/testimonials/' + id, { method: 'DELETE' }).then(() => { setTestimonials(testimonials.filter(t => t.id !== id)); });
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Testimonials'),
+        React.createElement('div', { key: 'form' }, [
+          ['name','company','message'].map(field =>
+            React.createElement('div', { key: field, className: 'form-group' }, [
+              React.createElement('label', { key: 'label', htmlFor: field }, field.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())),
+              field === 'message'
+                ? React.createElement('textarea', { key: 'textarea', id: field, name: field, value: form[field], onChange: handleChange })
+                : React.createElement('input', { key: 'input', id: field, name: field, value: form[field], onChange: handleChange })
+            ])
+          ),
+          React.createElement('button', { key: 'addBtn', className: 'button', onClick: handleAdd }, 'Add Testimonial')
+        ]),
+        React.createElement('div', { key: 'list' }, testimonials.map(t =>
+          React.createElement(ListItem, { key: t.id, text: t.name + ' (' + t.company + ')', onDelete: () => handleDelete(t.id) })
+        ))
+      ]);
+    }
+
+    function ContactSubmissionsSection() {
+      const [submissions, setSubmissions] = useState([]);
+      useEffect(() => { fetch('/api/contact-submissions').then(res => res.json()).then(setSubmissions); }, []);
+      const handleDelete = (id) => {
+        fetch('/api/contact-submissions/' + id, { method: 'DELETE' }).then(() => { setSubmissions(submissions.filter(s => s.id !== id)); });
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Contact Submissions'),
+        React.createElement('div', { key: 'submissions', className: 'submissions' }, submissions.map(s =>
+          React.createElement('div', { key: s.id, className: 'list-item' }, [
+            React.createElement('div', { key: 'info' }, [
+              React.createElement('strong', { key: 'name' }, s.firstName + ' ' + s.lastName),
+              React.createElement('small', { key: 'company' }, ' ' + (s.company || '')), 
+              React.createElement('p', { key: 'msg' }, s.message)
+            ]),
+            React.createElement('button', { key: 'del', className: 'delete-button', onClick: () => handleDelete(s.id) }, 'Delete')
+          ])
+        ))
+      ]);
+    }
+
+    function AdminApp() {
+      return React.createElement('div', { className: 'container' }, [
+        React.createElement(BannersSection, { key: 'banners' }),
+        React.createElement(ProductsSection, { key: 'products' }),
+        React.createElement(EventsSection, { key: 'events' }),
+        React.createElement(TestimonialsSection, { key: 'testimonials' }),
+        React.createElement(ContactSubmissionsSection, { key: 'contact' })
+      ]);
+    }
+
+    ReactDOM.render(
+      React.createElement(AdminApp, null),
+      document.getElementById('root')
+    );
+  </script>
+</body>
+</html>

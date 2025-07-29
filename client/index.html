@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AV/IT Solutions Demo</title>
+  <style>
+    /* Core layout and colors inspired by the Almoe Digital Solutions homepage */
+    body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #fff; }
+    h2 { margin-top: 0; }
+    .hero {
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      height: 60vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+    .hero p { font-size: 1.2rem; margin-bottom: 1.5rem; max-width: 500px; }
+    .button {
+      padding: 0.75rem 1.5rem;
+      background: #F5A623;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      background: #111;
+      padding: 2rem 0;
+    }
+    .stat { text-align: center; margin: 1rem; min-width: 120px; }
+    .stat-number { font-size: 2rem; font-weight: bold; color: #F5A623; }
+    .section { padding: 2rem; }
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .card {
+      background: #111;
+      padding: 1rem;
+      border-radius: 8px;
+      flex: 1 1 calc(33% - 2rem);
+      min-width: 200px;
+      box-sizing: border-box;
+    }
+    .card h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; color: #F5A623; }
+    .testimonial {
+      background: #111;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #ccc; }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #222;
+      color: #fff;
+    }
+    .form-group textarea { min-height: 100px; }
+    .footer {
+      background: #111;
+      padding: 2rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <!-- Load React and ReactDOM from jsDelivr CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/react@17/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.development.js"></script>
+  <script>
+    // Destructure hooks for convenience
+    const { useState, useEffect } = React;
+
+    function Hero(props) {
+      const banner = props.banner || {};
+      const style = {
+        backgroundImage: banner.imageUrl ? 'url(' + banner.imageUrl + ')' : 'none'
+      };
+      return React.createElement('div', { className: 'hero', style }, [
+        React.createElement('h1', { key: 'h1' }, banner.title || ''),
+        React.createElement('p', { key: 'p' }, banner.subtitle || ''),
+        React.createElement('button', {
+          key: 'btn',
+          className: 'button',
+          onClick: () => { if (banner.ctaLink) window.location.href = banner.ctaLink; }
+        }, banner.ctaLabel || 'Learn more')
+      ]);
+    }
+
+    function Stats() {
+      const items = [
+        { number: '30+', label: 'Years of Experience' },
+        { number: '30+', label: 'Partner Brands' },
+        { number: '20+', label: 'Service Partners' },
+        { number: '3,500+', label: 'AV Installations' }
+      ];
+      return React.createElement('div', { className: 'stats' },
+        items.map((item, idx) =>
+          React.createElement('div', { key: idx, className: 'stat' }, [
+            React.createElement('div', { key: 'num', className: 'stat-number' }, item.number),
+            React.createElement('div', { key: 'lbl' }, item.label)
+          ])
+        )
+      );
+    }
+
+    function Events(props) {
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Latest News & Events'),
+        React.createElement('div', { key: 'cards', className: 'cards' },
+          props.events.map(event =>
+            React.createElement('div', { key: event.id, className: 'card' }, [
+              React.createElement('h3', { key: 'title' }, event.title),
+              React.createElement('p', { key: 'desc' }, event.description),
+              React.createElement('small', { key: 'date' }, event.date)
+            ])
+          )
+        )
+      ]);
+    }
+
+    function Testimonials(props) {
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'What our clients say'),
+        props.testimonials.map(t =>
+          React.createElement('div', { key: t.id, className: 'testimonial' }, [
+            React.createElement('strong', { key: 'name' }, t.name + ' (' + t.company + ')'),
+            React.createElement('p', { key: 'msg' }, '“' + t.message + '”')
+          ])
+        )
+      ]);
+    }
+
+    function ContactForm() {
+      const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', company: '', message: '' });
+      const [status, setStatus] = useState('');
+      const handleChange = (e) => {
+        setForm(Object.assign({}, form, { [e.target.name]: e.target.value }));
+      };
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        fetch('/api/contact-submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        })
+        .then(res => res.json())
+        .then(() => {
+          setStatus('Thank you! We will get back to you.');
+          setForm({ firstName: '', lastName: '', phone: '', email: '', company: '', message: '' });
+        })
+        .catch(() => setStatus('Sorry, there was an error submitting the form.'));
+      };
+      return React.createElement('div', { className: 'section' }, [
+        React.createElement('h2', { key: 'h2' }, 'Get in touch'),
+        React.createElement('form', { key: 'form', onSubmit: handleSubmit }, [
+          ['firstName','lastName','phone','email','company'].map(field =>
+            React.createElement('div', { key: field, className: 'form-group' }, [
+              React.createElement('label', { key: 'label', htmlFor: field }, field.replace(/([A-Z])/g, ' $1').replace(/^./, function(s){ return s.toUpperCase(); })),
+              React.createElement('input', { key: 'input', id: field, name: field, value: form[field], onChange: handleChange, required: field !== 'company' })
+            ])
+          ),
+          React.createElement('div', { key: 'message-group', className: 'form-group' }, [
+            React.createElement('label', { key: 'label', htmlFor: 'message' }, 'Message'),
+            React.createElement('textarea', { key: 'textarea', id: 'message', name: 'message', value: form.message, onChange: handleChange, required: true })
+          ]),
+          React.createElement('button', { key: 'button', className: 'button', type: 'submit' }, 'Send')
+        ]),
+        status && React.createElement('p', { key: 'status' }, status)
+      ]);
+    }
+
+    function App() {
+      const [banner, setBanner] = useState({});
+      const [eventsData, setEventsData] = useState([]);
+      const [testimonialsData, setTestimonialsData] = useState([]);
+      useEffect(() => {
+        fetch('/api/banners').then(res => res.json()).then(data => { if (data.length) setBanner(data[0]); });
+        fetch('/api/events').then(res => res.json()).then(setEventsData);
+        fetch('/api/testimonials').then(res => res.json()).then(setTestimonialsData);
+      }, []);
+      return React.createElement(React.Fragment, null, [
+        React.createElement(Hero, { key: 'hero', banner: banner }),
+        React.createElement(Stats, { key: 'stats' }),
+        React.createElement(Events, { key: 'events', events: eventsData }),
+        React.createElement(Testimonials, { key: 'testimonials', testimonials: testimonialsData }),
+        React.createElement(ContactForm, { key: 'contact' }),
+        React.createElement('div', { key: 'footer', className: 'footer' },
+          React.createElement('p', null, '\u00A9 ' + new Date().getFullYear() + ' Demo AV/IT Solutions')
+        )
+      ]);
+    }
+
+    ReactDOM.render(
+      React.createElement(App, null),
+      document.getElementById('root')
+    );
+  </script>
+</body>
+</html>
